@@ -8,6 +8,6 @@
     <path d="M20 16C18.895 16 18 16.895 18 18C18 19.105 18.895 20 20 20C21.105 20 22 19.105 22 18C22 16.895 21.105 16 20 16Z" fill="#818CF8"/>
     
     <!-- Text "Chatwoot" -->
-    <text x="50" y="25" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#F3F4F6">ChatWoot</text>
+    <text x="50" y="25" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#F3F4F6">chatwoot</text>
   </g>
 </svg> 
