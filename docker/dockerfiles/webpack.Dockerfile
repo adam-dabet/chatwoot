@@ -1,0 +1,1 @@
+FROM chatwoot/chatwoot:develop AS base 
