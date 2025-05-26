@@ -1,4 +1,3 @@
-
 ## Local Development Setup
 
 This guide will help you set up Chatwoot for local development. Follow these steps to get your development environment running.
