@@ -1,0 +1,98 @@
+/* New Custom Colors
+ * This file overrides the default Chatwoot color scheme
+ */
+
+
+
+:root {
+  /* Override primary brand color (was #1f93ff) */
+  --w-500: #7C3AED !important;
+  --color-woot: #7C3AED !important;
+  /* Shades of primary color */
+  --w-25: #F9F6FE !important;
+  --w-50: #F3EEFE !important;
+  --w-75: #E9DFFE !important;
+  --w-100: #DBC4FD !important;
+  --w-200: #C39DFC !important;
+  --w-300: #A06BFA !important;
+  --w-400: #8849F8 !important;
+  --w-600: #6527E3 !important;
+  --w-700: #5520C5 !important;
+  --w-800: #421897 !important;
+  --w-900: #31126E !important;
+
+  /* Brand color */
+  --brand: #7C3AED !important;
+
+  /* Action/primary color */
+  --color-primary: #7C3AED !important;
+  --primary-color: #7C3AED !important;
+  --action-color: #7C3AED !important;
+
+  /* CSS Variables for theme system */
+  --color-primary-25: 249, 246, 254 !important;
+  --color-primary-50: 243, 238, 254 !important;
+  --color-primary-75: 233, 223, 254 !important;
+  --color-primary-100: 219, 196, 253 !important;
+  --color-primary-200: 195, 157, 252 !important;
+  --color-primary-300: 160, 107, 250 !important;
+  --color-primary-400: 136, 73, 248 !important;
+  --color-primary-500: 124, 58, 237 !important;
+  --color-primary-600: 101, 39, 227 !important;
+  --color-primary-700: 85, 32, 197 !important;
+  --color-primary-800: 66, 24, 151 !important;
+  --color-primary-900: 49, 18, 110 !important;
+}
+
+  /* For components that use color directly */
+  .woot-color {
+    color: #7C3AED !important;
+  }
+
+  .woot-bg {
+    background-color: #7C3AED !important;
+  }
+
+  /* Buttons and other components might use these classes */
+  .button--primary,
+  .primary-button {
+    background-color: #7C3AED !important;
+    border-color: #6527E3 !important;
+  }
+
+ 
+
+/* Link colors */
+a {
+  color: #7C3AED !important;
+}
+
+a:hover {
+  color: #7C3AED !important;
+}
+
+/* Additional utility classes for brand colors */
+.text-brand {
+  color: #7C3AED !important;
+}
+
+.bg-brand {
+  background-color: #7C3AED !important;
+}
+
+.border-brand {
+  border-color: #7C3AED !important;
+}
+
+/* Hover states */
+.hover\:text-brand:hover {
+  color: #7C3AED !important;
+}
+
+.hover\:bg-brand:hover {
+  background-color: #7C3AED !important;
+}
+
+.hover\:border-brand:hover {
+  border-color: #7C3AED !important;
+} 
