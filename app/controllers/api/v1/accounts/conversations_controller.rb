@@ -34,7 +34,39 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
                                 .per(ATTACHMENT_RESULTS_PER_PAGE)
   end
 
-  def show; end
+  def show
+    @conversation = Current.account.conversations.find_by(display_id: params[:id])
+    
+    # Update interaction patterns on each view
+    @conversation.update_interaction_patterns
+    @conversation.save! if @conversation.changed?
+  end
+
+  # Add method to update content attributes
+  def update_content_attributes
+    @conversation = Current.account.conversations.find_by(display_id: params[:id])
+    
+    case params[:action_type]
+    when 'set_resolution_context'
+      @conversation.set_resolution_context(
+        params[:topic_category],
+        params[:complexity_level],
+        params[:resolution_type]
+      )
+    when 'track_customer_satisfaction'
+      @conversation.set_content_attribute('customer_satisfaction', {
+        rating: params[:rating],
+        feedback: params[:feedback],
+        timestamp: Time.current
+      })
+    end
+    
+    if @conversation.save
+      render json: { status: 'success', content_attributes: @conversation.content_attributes }
+    else
+      render json: { errors: @conversation.errors }, status: :unprocessable_entity
+    end
+  end
 
   def create
     ActiveRecord::Base.transaction do
@@ -124,7 +156,16 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
     @conversation.save!
   end
 
+  def content_attributes
+    @conversation.content_attributes = params.permit(content_attributes: {})[:content_attributes]
+    @conversation.save!
+  end
+
   private
+
+  def conversation_params
+    params.permit(:status, :assignee_id, :team_id, :priority, content_attributes: {})
+  end
 
   def permitted_update_params
     # TODO: Move the other conversation attributes to this method and remove specific endpoints for each attribute

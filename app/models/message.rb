@@ -265,12 +265,13 @@ class Message < ApplicationRecord
   def execute_after_create_commit_callbacks
     # rails issue with order of active record callbacks being executed https://github.com/rails/rails/issues/20911
     reopen_conversation
-    notify_via_mail
-    set_conversation_activity
-    dispatch_create_events
     send_reply
     execute_message_template_hooks
+    dispatch_create_events
     update_contact_activity
+    update_waiting_since
+    # Auto-update interaction patterns when new messages are created
+    update_conversation_interaction_patterns
   end
 
   def update_contact_activity
@@ -402,6 +403,12 @@ class Message < ApplicationRecord
     # rubocop:disable Rails/SkipsModelValidations
     conversation.update_columns(last_activity_at: created_at)
     # rubocop:enable Rails/SkipsModelValidations
+  end
+
+  def update_conversation_interaction_patterns
+    # Update interaction patterns automatically when messages are added
+    conversation.update_interaction_patterns
+    conversation.save! if conversation.changed?
   end
 end
 

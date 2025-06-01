@@ -257,19 +257,6 @@ class Conversation < ApplicationRecord
     set_content_attribute('resolution_context', resolution)
   end
 
-  # Set customer satisfaction
-  def set_customer_satisfaction(rating, nps_score, feedback, feedback_category)
-    satisfaction = {
-      rating: rating,
-      nps_score: nps_score,
-      feedback: feedback,
-      feedback_category: feedback_category,
-      collected_at: Time.current
-    }
-    
-    set_content_attribute('customer_satisfaction', satisfaction)
-  end
-
   private
 
   def execute_after_update_commit_callbacks
