@@ -22,6 +22,14 @@ GIT
       devise (>= 4.0.0, < 5.0.0)
       railties (>= 5.0.0, < 8.0.0)
 
+GIT
+  remote: https://github.com/sass/sassc-ruby.git
+  revision: eddbacbac2ae266400c0ca1ccf90bdc1563cc879
+  branch: master
+  specs:
+    sassc (2.4.0)
+      ffi (~> 1.9)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -328,6 +336,9 @@ GEM
       gapic-common (>= 0.20.0, < 2.a)
       google-cloud-errors (~> 1.0)
     google-protobuf (3.25.7)
+    google-protobuf (3.25.7-arm64-darwin)
+    google-protobuf (3.25.7-x86_64-darwin)
+    google-protobuf (3.25.7-x86_64-linux)
     googleapis-common-protos (1.6.0)
       google-protobuf (>= 3.18, < 5.a)
       googleapis-common-protos-types (~> 1.7)
@@ -720,8 +731,6 @@ GEM
     sass-listen (4.0.0)
       rb-fsevent (~> 0.9, >= 0.9.4)
       rb-inotify (~> 0.9, >= 0.9.7)
-    sassc (2.4.0)
-      ffi (~> 1.9)
     sassc-rails (2.1.2)
       railties (>= 4.0.0)
       sassc (>= 2.0)
@@ -984,6 +993,7 @@ DEPENDENCIES
   rubocop-rails
   rubocop-rspec
   ruby-openai
+  sassc (~> 2.4.0)!
   scout_apm
   scss_lint
   seed_dump
@@ -1017,7 +1027,7 @@ DEPENDENCIES
   working_hours
 
 RUBY VERSION
-   ruby 3.4.4p34
+   ruby 3.2.8p263
 
 BUNDLED WITH
    2.5.16

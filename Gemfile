@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-ruby '3.4.4'
+ruby '3.2.8'
 
 ##-- base gems for rails --##
 gem 'rack-cors', '2.0.0', require: 'rack/cors'
@@ -179,6 +179,9 @@ gem 'iso-639'
 gem 'ruby-openai'
 
 gem 'shopify_api'
+
+# Use a specific version of sassc that works on Apple Silicon
+gem 'sassc', '~> 2.4.0', git: 'https://github.com/sass/sassc-ruby.git', branch: 'master'
 
 ### Gems required only in specific deployment environments ###
 ##############################################################

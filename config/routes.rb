@@ -332,6 +332,15 @@ Rails.application.routes.draw do
           end
         end
       end
+
+      namespace :accounts do
+        resources :conversations, only: [:index, :show, :update, :destroy] do
+          member do
+            post :content_attributes, to: 'conversations/content_attributes#create'
+            post :update_content_attributes, to: 'conversations/content_attributes#update'
+          end
+        end
+      end
     end
 
     namespace :v2 do
