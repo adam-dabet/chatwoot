@@ -69,6 +69,11 @@ class Conversation < ApplicationRecord
   validates :uuid, uniqueness: true
   validate :validate_referer_url
 
+  validates :content_attributes, jsonb_attributes_length: true
+  # Content attributes structure validation
+  validate :validate_content_attributes_structure
+
+
   enum status: { open: 0, resolved: 1, pending: 2, snoozed: 3 }
   enum priority: { low: 0, medium: 1, high: 2, urgent: 3 }
 
@@ -117,6 +122,8 @@ class Conversation < ApplicationRecord
   after_update_commit :execute_after_update_commit_callbacks
   after_create_commit :notify_conversation_creation
   after_create_commit :load_attributes_created_by_db_triggers
+  # Auto-update interaction patterns when conversation changes
+  after_update_commit :auto_update_interaction_patterns, if: :should_update_interaction_patterns?
 
   delegate :auto_resolve_after, to: :account
 
@@ -195,12 +202,91 @@ class Conversation < ApplicationRecord
     dispatcher_dispatch(CONVERSATION_UPDATED, previous_changes)
   end
 
+  # Helper methods for content attributes
+  def get_content_attribute(key)
+    content_attributes&.dig(key.to_s)
+  end
+  def get_content_attribute(key)
+    content_attributes&.dig(key.to_s)
+  end
+  # Track conversation context
+  def track_conversation_context(context_data)
+    context = {
+      source_type: context_data[:source_type], # 'widget', 'email', 'social', 'api'
+      initial_page: context_data[:initial_page],
+      referrer: context_data[:referrer],
+      user_agent: context_data[:user_agent],
+      session_duration: context_data[:session_duration],
+      pages_visited: context_data[:pages_visited] || 1,
+      previous_conversations_count: contact.conversations.resolved.count
+    }
+    
+    set_content_attribute('conversation_context', context)
+  end
+  
+  # Track interaction patterns
+  def update_interaction_patterns
+    last_message = messages.chat.last  # Only consider chat messages
+    last_activity = if last_message
+                     last_message.incoming? ? 'incoming' : 'outgoing'
+                   else
+                     'N/A'
+                   end
+
+    patterns = {
+      messages_count: messages.chat.count,  # Only count chat messages
+      agent_response_time: calculate_avg_agent_response_time,
+      customer_response_time: calculate_avg_customer_response_time,
+      handoff_count: calculate_handoff_count,
+      last_activity_type: last_activity
+    }
+    
+    set_content_attribute('interaction_patterns', patterns)
+  end
+  
+  # Track resolution context
+  def set_resolution_context(topic_category, complexity_level, resolution_type)
+    resolution = {
+      topic_category: topic_category, # 'billing', 'technical', 'general', 'complaint'
+      complexity_level: complexity_level, # 'simple', 'moderate', 'complex'
+      resolution_type: resolution_type, # 'solved', 'escalated', 'transferred', 'automated'
+      resolution_time: Time.current - created_at,
+      agent_satisfaction: get_content_attribute('agent_satisfaction')
+    }
+    
+    set_content_attribute('resolution_context', resolution)
+  end
+
+  # Set customer satisfaction
+  def set_customer_satisfaction(rating, nps_score, feedback, feedback_category)
+    satisfaction = {
+      rating: rating,
+      nps_score: nps_score,
+      feedback: feedback,
+      feedback_category: feedback_category,
+      collected_at: Time.current
+    }
+    
+    set_content_attribute('customer_satisfaction', satisfaction)
+  end
+
   private
 
   def execute_after_update_commit_callbacks
     notify_status_change
     create_activity
     notify_conversation_updation
+  end
+
+  def auto_update_interaction_patterns
+    # Update interaction patterns when conversation status, assignee, or other key attributes change
+    update_interaction_patterns
+    save! if changed?
+  end
+
+  def should_update_interaction_patterns?
+    # Update patterns when status, assignee, or priority changes
+    saved_change_to_status? || saved_change_to_assignee_id? || saved_change_to_priority?
   end
 
   def ensure_snooze_until_reset
@@ -299,6 +385,67 @@ class Conversation < ApplicationRecord
     self['additional_attributes']['referer'] = nil unless url_valid?(additional_attributes['referer'])
   end
 
+  def set_content_attribute(key, value)
+    self.content_attributes = (content_attributes || {}).merge(key.to_s => value)
+  end
+
+  def validate_content_attributes_structure
+    return if content_attributes.blank?
+    
+    allowed_keys = %w[conversation_context interaction_patterns resolution_context customer_satisfaction]
+    invalid_keys = content_attributes.keys - allowed_keys
+    
+    if invalid_keys.any?
+      errors.add(:content_attributes, "contains invalid keys: #{invalid_keys.join(', ')}")
+    end
+  end
+  
+  def calculate_avg_agent_response_time
+    # Calculate time between customer message and agent response (chat messages only)
+    chat_messages = messages.chat.order(:created_at)
+    return 0 if chat_messages.count < 2
+    
+    response_times = []
+    chat_messages.each_cons(2) do |prev_msg, curr_msg|
+      # Agent responding to customer
+      if prev_msg.incoming? && curr_msg.outgoing?
+        response_times << (curr_msg.created_at - prev_msg.created_at)
+      end
+    end
+    
+    return 0 if response_times.empty?
+    
+    # Convert to minutes and round
+    (response_times.sum / response_times.length / 60).round
+  end
+  
+  def calculate_avg_customer_response_time
+    # Calculate time between agent message and customer response (chat messages only)
+    chat_messages = messages.chat.order(:created_at)
+    return 0 if chat_messages.count < 2
+    
+    response_times = []
+    chat_messages.each_cons(2) do |prev_msg, curr_msg|
+      # Customer responding to agent
+      if prev_msg.outgoing? && curr_msg.incoming?
+        response_times << (curr_msg.created_at - prev_msg.created_at)
+      end
+    end
+    
+    return 0 if response_times.empty?
+    
+    # Convert to minutes and round
+    (response_times.sum / response_times.length / 60).round
+  end
+  
+  def calculate_handoff_count
+    # Count how many times conversation was reassigned
+    messages.where(message_type: 'activity')
+           .where("content LIKE ?", "%assigned%")
+           .count
+  end
+  
+
   # creating db triggers
   trigger.before(:insert).for_each(:row) do
     "NEW.display_id := nextval('conv_dpid_seq_' || NEW.account_id);"
@@ -307,3 +454,10 @@ end
 
 Conversation.include_mod_with('Concerns::Conversation')
 Conversation.prepend_mod_with('Conversation')
+
+  # Include content_attributes in JSON responses
+  def as_json(options = {})
+    super(options).tap do |json|
+      json['content_attributes'] = content_attributes if respond_to?(:content_attributes)
+    end
+  end

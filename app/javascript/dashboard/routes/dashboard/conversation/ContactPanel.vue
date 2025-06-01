@@ -19,6 +19,8 @@ import CustomAttributes from './customAttributes/CustomAttributes.vue';
 import Draggable from 'vuedraggable';
 import MacrosList from './Macros/List.vue';
 import ShopifyOrdersList from '../../../components/widgets/conversation/ShopifyOrdersList.vue';
+// Add our ContentAttributes component
+import ConversationContentAttributes from '../../../components/widgets/conversation/ConversationContentAttributes.vue';
 
 const props = defineProps({
   conversationId: {
@@ -112,6 +114,7 @@ onMounted(() => {
       :channel-type="channelType"
       @toggle-panel="onPanelToggle"
     />
+    
     <div class="list-group pb-8">
       <Draggable
         :list="conversationSidebarItems"
@@ -125,8 +128,21 @@ onMounted(() => {
       >
         <template #item="{ element }">
           <div :key="element.name" class="px-2">
+            <div v-if="element.name === 'content_attributes'">
+              <AccordionItem
+                :title="$t('CONVERSATION_SIDEBAR.ACCORDION.CONTENT_ATTRIBUTES')"
+                :is-open="isContactSidebarItemOpen('is_content_attributes_open')"
+                compact
+                @toggle="value => toggleSidebarUIState('is_content_attributes_open', value)"
+              >
+                <ConversationContentAttributes 
+                  v-if="currentChat && currentChat.id"
+                  :conversation="currentChat"
+                />
+              </AccordionItem>
+            </div>
             <div
-              v-if="element.name === 'conversation_actions'"
+              v-else-if="element.name === 'conversation_actions'"
               class="conversation--actions"
             >
               <AccordionItem
