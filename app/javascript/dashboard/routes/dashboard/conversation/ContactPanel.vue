@@ -6,6 +6,7 @@ import {
   useStore,
 } from 'dashboard/composables/store';
 import { useUISettings } from 'dashboard/composables/useUISettings';
+import axios from 'axios';
 
 import AccordionItem from 'dashboard/components/Accordion/AccordionItem.vue';
 import ContactConversations from './ContactConversations.vue';
@@ -99,6 +100,21 @@ const onDragEnd = () => {
   });
 };
 
+const onUpdateContentAttributes = async newAttributes => {
+  try {
+    const accountId = currentChat.value.account_id;
+    const conversationId = currentChat.value.id;
+    await axios.patch(`/api/v1/accounts/${accountId}/conversations/${conversationId}`, {
+      conversation: { content_attributes: newAttributes }
+    });
+    // Update local state
+    currentChat.value.content_attributes = { ...newAttributes };
+  } catch (error) {
+    // Optionally show a notification
+    console.error('Failed to update content attributes:', error);
+  }
+};
+
 onMounted(() => {
   conversationSidebarItems.value = conversationSidebarItemsOrder.value;
   getContactDetails();
@@ -187,7 +203,7 @@ onMounted(() => {
                   value => toggleSidebarUIState('is_content_attributes_open', value)
                 "
               >
-                <ConversationContentAttributes :content-attributes="currentChat.value?.content_attributes || {}" />
+                <ConversationContentAttributes :conversation="currentChat.value" @update:contentAttributes="onUpdateContentAttributes" />
               </AccordionItem>
             </div>
             <div v-else-if="element.name === 'contact_attributes'">

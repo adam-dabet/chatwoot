@@ -21,14 +21,9 @@ json.meta do
 end
 
 json.id conversation.display_id
-if conversation.messages.where(account_id: conversation.account_id).last.blank?
-  json.messages []
-else
-  json.messages [
-    conversation.messages.where(account_id: conversation.account_id)
-                .includes([{ attachments: [{ file_attachment: [:blob] }] }]).last.try(:push_event_data)
-  ]
-end
+json.messages conversation.messages.where(account_id: conversation.account_id)
+  .includes([{ attachments: [{ file_attachment: [:blob] }] }])
+  .map(&:push_event_data)
 
 json.account_id conversation.account_id
 json.uuid conversation.uuid
