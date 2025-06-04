@@ -129,6 +129,8 @@ Rails.application.routes.draw do
               get :attachments
               post :copilot
               get :inbox_assistant
+              post :content_attributes, to: 'conversations/content_attributes#create'
+              post :update_content_attributes, to: 'conversations/content_attributes#update'
             end
           end
 
@@ -329,15 +331,6 @@ Rails.application.routes.draw do
             collection do
               post :add_participant_to_meeting
             end
-          end
-        end
-      end
-
-      namespace :accounts do
-        resources :conversations, only: [:index, :show, :update, :destroy] do
-          member do
-            post :content_attributes, to: 'conversations/content_attributes#create'
-            post :update_content_attributes, to: 'conversations/content_attributes#update'
           end
         end
       end
