@@ -129,6 +129,8 @@ Rails.application.routes.draw do
               get :attachments
               post :copilot
               get :inbox_assistant
+              post :content_attributes, to: 'conversations/content_attributes#create'
+              post :update_content_attributes, to: 'conversations/content_attributes#update'
             end
           end
 

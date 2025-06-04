@@ -127,6 +127,7 @@ class Message < ApplicationRecord
   has_many :notifications, as: :primary_actor, dependent: :destroy_async
 
   after_create_commit :execute_after_create_commit_callbacks
+  after_create :update_conversation_interaction_patterns
 
   after_update_commit :dispatch_update_event
 
@@ -402,6 +403,33 @@ class Message < ApplicationRecord
     # rubocop:disable Rails/SkipsModelValidations
     conversation.update_columns(last_activity_at: created_at)
     # rubocop:enable Rails/SkipsModelValidations
+  end
+
+  def update_conversation_interaction_patterns
+    conversation = self.conversation
+    patterns = conversation.content_attributes['interaction_patterns'] || {}
+
+    # Increment messages count
+    patterns['messages_count'] = (patterns['messages_count'] || 0) + 1
+
+    # Update last activity type (incoming/outgoing)
+    patterns['last_activity_type'] = self.message_type
+
+    # Calculate response times
+    # Only calculate if there is a previous message
+    last_message = conversation.messages.order(:created_at).where.not(id: self.id).last
+    if last_message
+      time_diff = self.created_at - last_message.created_at
+      if self.message_type == 'incoming' && last_message.message_type == 'outgoing'
+        # Customer responded
+        patterns['customer_response_time'] = time_diff
+      elsif self.message_type == 'outgoing' && last_message.message_type == 'incoming'
+        # Agent responded
+        patterns['agent_response_time'] = time_diff
+      end
+    end
+
+    conversation.update_content_attributes('interaction_patterns' => patterns)
   end
 end
 

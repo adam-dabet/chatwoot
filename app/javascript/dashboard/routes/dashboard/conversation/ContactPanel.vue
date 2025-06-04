@@ -6,6 +6,7 @@ import {
   useStore,
 } from 'dashboard/composables/store';
 import { useUISettings } from 'dashboard/composables/useUISettings';
+import { useAccount } from 'dashboard/composables/useAccount';
 
 import AccordionItem from 'dashboard/components/Accordion/AccordionItem.vue';
 import ContactConversations from './ContactConversations.vue';
@@ -19,6 +20,7 @@ import CustomAttributes from './customAttributes/CustomAttributes.vue';
 import Draggable from 'vuedraggable';
 import MacrosList from './Macros/List.vue';
 import ShopifyOrdersList from '../../../components/widgets/conversation/ShopifyOrdersList.vue';
+import ConversationContentAttributes from 'dashboard/components/widgets/conversation/ConversationContentAttributes.vue';
 
 const props = defineProps({
   conversationId: {
@@ -41,6 +43,8 @@ const {
   conversationSidebarItemsOrder,
   toggleSidebarUIState,
 } = useUISettings();
+
+const { accountId } = useAccount();
 
 const dragging = ref(false);
 const conversationSidebarItems = ref([]);
@@ -96,6 +100,20 @@ const onDragEnd = () => {
   updateUISettings({
     conversation_sidebar_items_order: conversationSidebarItems.value,
   });
+};
+
+const onUpdateContentAttributes = async newAttributes => {
+  try {
+    const conversationId = currentChat.value.id;
+    await window.axios.post(`/api/v1/accounts/${accountId.value}/conversations/${conversationId}/update_content_attributes`, {
+      content_attributes: newAttributes
+    });
+    // Update local state
+    currentChat.value.content_attributes = { ...newAttributes };
+  } catch (error) {
+    // Optionally show a notification
+    console.error('Failed to update content attributes:', error);
+  }
 };
 
 onMounted(() => {
@@ -175,6 +193,18 @@ onMounted(() => {
                   :conversation-attributes="conversationAdditionalAttributes"
                   :contact-attributes="contactAdditionalAttributes"
                 />
+              </AccordionItem>
+            </div>
+            <div v-else-if="element.name === 'content_attributes'">
+              <AccordionItem
+                title="Content Attributes"
+                :is-open="isContactSidebarItemOpen('is_content_attributes_open')"
+                compact
+                @toggle="
+                  value => toggleSidebarUIState('is_content_attributes_open', value)
+                "
+              >
+                <ConversationContentAttributes :conversation="currentChat.value" @update:contentAttributes="onUpdateContentAttributes" />
               </AccordionItem>
             </div>
             <div v-else-if="element.name === 'contact_attributes'">
