@@ -6,7 +6,7 @@ import {
   useStore,
 } from 'dashboard/composables/store';
 import { useUISettings } from 'dashboard/composables/useUISettings';
-import axios from 'axios';
+import { useAccount } from 'dashboard/composables/useAccount';
 
 import AccordionItem from 'dashboard/components/Accordion/AccordionItem.vue';
 import ContactConversations from './ContactConversations.vue';
@@ -43,6 +43,8 @@ const {
   conversationSidebarItemsOrder,
   toggleSidebarUIState,
 } = useUISettings();
+
+const { accountId } = useAccount();
 
 const dragging = ref(false);
 const conversationSidebarItems = ref([]);
@@ -102,10 +104,9 @@ const onDragEnd = () => {
 
 const onUpdateContentAttributes = async newAttributes => {
   try {
-    const accountId = currentChat.value.account_id;
     const conversationId = currentChat.value.id;
-    await axios.patch(`/api/v1/accounts/${accountId}/conversations/${conversationId}`, {
-      conversation: { content_attributes: newAttributes }
+    await window.axios.post(`/api/v1/accounts/${accountId.value}/conversations/${conversationId}/update_content_attributes`, {
+      content_attributes: newAttributes
     });
     // Update local state
     currentChat.value.content_attributes = { ...newAttributes };
