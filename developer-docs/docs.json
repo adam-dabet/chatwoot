@@ -6,8 +6,7 @@
     "dark": "/logo/dark.png",
     "light": "/logo/light.png"
   },
-  "favicon": "/favicon.png",
-  "colors": {
+   "favicon": "/brand-assets/custom/logo_thumbnail.png",  "colors": {
     "primary": "#0069ED",
     "light": "#4D9CFF",
     "dark": "#0050B4"
