@@ -68,6 +68,7 @@ class Conversation < ApplicationRecord
   validates :custom_attributes, jsonb_attributes_length: true
   validates :uuid, uniqueness: true
   validate :validate_referer_url
+  validates :content_attributes, jsonb_attributes_length: true
 
   enum status: { open: 0, resolved: 1, pending: 2, snoozed: 3 }
   enum priority: { low: 0, medium: 1, high: 2, urgent: 3 }
@@ -195,6 +196,74 @@ class Conversation < ApplicationRecord
     dispatcher_dispatch(CONVERSATION_UPDATED, previous_changes)
   end
 
+  # Content Attributes Helper Methods
+  def set_content_attribute(path, value)
+    keys = path.to_s.split('.')
+    current = content_attributes.deep_dup
+    last_key = keys.pop
+    
+    # Navigate to the nested location
+    target = keys.inject(current) { |h, k| h[k] ||= {} }
+    target[last_key] = value
+    
+    update!(content_attributes: current)
+  end
+
+  def get_content_attribute(path)
+    keys = path.to_s.split('.')
+    keys.inject(content_attributes) { |h, k| h&.dig(k) }
+  end
+
+  def update_content_attributes(attributes)
+    update!(content_attributes: content_attributes.deep_merge(attributes))
+  end
+
+  def update_category_attributes(category, attributes)
+    current = content_attributes.deep_dup
+    current[category] = (current[category] || {}).merge(attributes)
+    update!(content_attributes: current)
+  end
+
+  # Category-specific setters
+  def update_conversation_context(attributes)
+    update_category_attributes('conversation_context', attributes)
+  end
+
+  def update_interaction_patterns(attributes)
+    update_category_attributes('interaction_patterns', attributes)
+  end
+
+  def update_resolution_context(attributes)
+    update_category_attributes('resolution_context', attributes)
+  end
+
+  def update_customer_satisfaction(attributes)
+    update_category_attributes('customer_satisfaction', attributes)
+  end
+
+  # Validation methods
+  def validate_content_attribute_category(category)
+    return true if %w[conversation_context interaction_patterns resolution_context customer_satisfaction].include?(category.to_s)
+    
+    errors.add(:content_attributes, "Invalid category: #{category}")
+    false
+  end
+
+  def validate_content_attribute_values(category, attributes)
+    case category.to_s
+    when 'conversation_context'
+      validate_conversation_context(attributes)
+    when 'interaction_patterns'
+      validate_interaction_patterns(attributes)
+    when 'resolution_context'
+      validate_resolution_context(attributes)
+    when 'customer_satisfaction'
+      validate_customer_satisfaction(attributes)
+    else
+      false
+    end
+  end
+
   private
 
   def execute_after_update_commit_callbacks
@@ -297,6 +366,46 @@ class Conversation < ApplicationRecord
     return unless additional_attributes['referer']
 
     self['additional_attributes']['referer'] = nil unless url_valid?(additional_attributes['referer'])
+  end
+
+  def validate_conversation_context(attributes)
+    valid_channels = %w[email chat phone social]
+    valid_sources = %w[website mobile_app social_media email phone]
+    valid_priorities = %w[low medium high urgent]
+    valid_categories = %w[support sales billing technical general]
+
+    return false if attributes[:channel].present? && !valid_channels.include?(attributes[:channel])
+    return false if attributes[:source].present? && !valid_sources.include?(attributes[:source])
+    return false if attributes[:priority].present? && !valid_priorities.include?(attributes[:priority])
+    return false if attributes[:category].present? && !valid_categories.include?(attributes[:category])
+    
+    true
+  end
+
+  def validate_interaction_patterns(attributes)
+    return false if attributes[:escalation_level].present? && !(0..5).include?(attributes[:escalation_level].to_i)
+    return false if attributes[:complexity_score].present? && !(1..10).include?(attributes[:complexity_score].to_i)
+    return false if attributes[:customer_sentiment].present? && !%w[positive neutral negative].include?(attributes[:customer_sentiment])
+    return false if attributes[:interaction_type].present? && !%w[reactive proactive follow_up].include?(attributes[:interaction_type])
+    
+    true
+  end
+
+  def validate_resolution_context(attributes)
+    valid_resolution_types = %w[solved escalated transferred closed]
+    return false if attributes[:resolution_type].present? && !valid_resolution_types.include?(attributes[:resolution_type])
+    return false if attributes[:feedback_category].present? && !%w[positive neutral negative].include?(attributes[:feedback_category])
+    
+    true
+  end
+
+  def validate_customer_satisfaction(attributes)
+    return false if attributes[:rating].present? && !(1..5).include?(attributes[:rating].to_i)
+    return false if attributes[:nps_score].present? && !(0..10).include?(attributes[:nps_score].to_i)
+    return false if attributes[:csat_score].present? && !(1..5).include?(attributes[:csat_score].to_i)
+    return false if attributes[:feedback_category].present? && !%w[positive neutral negative].include?(attributes[:feedback_category])
+    
+    true
   end
 
   # creating db triggers
